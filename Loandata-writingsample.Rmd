@@ -1,0 +1,577 @@
+---
+title: "LoanAnalysis"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+## ProsperLoan Data Analysis
+
+```{r}
+setwd("/Users/lukemckinstry/Documents/Udacity/R")
+library(gridExtra)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(GGally)
+library(reshape)
+library(Hmisc)
+loandata <- read.csv("prosperLoanData.csv", header = TRUE, sep = ",")
+```
+
+
+```{r}
+myvars <- c("CreditGrade", "LoanStatus")
+newdata <- loandata[myvars]
+#table(newdata)
+```
+
+
+```{r}
+#nrow(newdata)
+```
+
+```{r}
+#nrow(subset(newdata, CreditGrade=="A"))
+#nrow(subset(newdata, CreditGrade=="E"))
+#ggplot(newdata, aes(factor(LoanStatus))) + 
+#  geom_bar() + facet_wrap(~ CreditGrade) + 
+#  theme(axis.title.x = element_text(face="bold", colour="#990000", size=20),
+#  axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+#  labs(title = "Loans by Loan Status",
+#       x = "Loan Status", y="Total # of Loans")
+```
+
+```{r}
+myvars2 <- c("BorrowerAPR", "BorrowerRate")
+newdata2 <- loandata[myvars2]
+#summary(newdata2)
+#ggsave(file="BorrowerRate-APR.pdf")
+```
+
+
+```{r}
+#ggplot(aes(x=BorrowerAPR, y=BorrowerRate), data=newdata2) +
+#  geom_point(alpha = 1/80) + stat_smooth() +
+#  labs(title = "BorrowerAPR vs BorrowerRate",
+#       x = "BorrowerAPR (%)", y="Borrower Rate (%)")
+```
+
+
+```{r}
+myvars4 <- c("EstimatedEffectiveYield","LoanOriginalAmount",
+             "EstimatedLoss","EstimatedReturn","LoanStatus",
+             "LP_ServiceFees","LP_CollectionFees","LenderYield",
+             "ProsperScore")
+newdata4 <- loandata[myvars4]
+#summary(newdata4)
+#nrow(subset(newdata4, EstimatedReturn<=0))/(nrow(newdata4))
+#levels(factor(newdata4$ProsperScore))
+
+#loan amount versus fees
+ppl1<-ggplot(newdata4, aes(x=LoanOriginalAmount,
+  y=-1*(LP_ServiceFees+LP_CollectionFees))) + geom_point(alpha = 1/40) +
+  stat_smooth() + labs(title = "Loans Fees",
+       x = "Loan Original Amount ($)", y="Loans Service and Collection Fees ($)")
+ppl2<-ggplot(newdata4, aes(x=LoanOriginalAmount, y=EstimatedEffectiveYield)) +
+  geom_point(alpha=1/40) + stat_smooth() + 
+  labs(title = "Loan Amount vs Yield for Lender",
+       x = "Loan Amount ($)", y="Estimated Lender Yield (%)")
+ppl3<-ggplot(newdata4, aes(factor(ProsperScore), EstimatedEffectiveYield)) + 
+  geom_boxplot() + labs(title = "Loan Rating vs Yield for Lender",
+       x = "ProsperScore (Loan Rating assigned by Prosper 1-11)",
+       y="Estimated Lender Yield (%)")
+ppl4<-ggplot(newdata4, aes(x=LoanOriginalAmount, y=EstimatedEffectiveYield)) +
+  geom_point() + facet_wrap( ~ ProsperScore) + stat_smooth() +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+  labs(title = "Loan Amount vs Yield for Lender by Prosper Score",
+       x = "Loan Original Amount ($)",
+       y="Estimated Lender Yield (%)")
+#grid.arrange(ppl1,ppl2,ppl3,ppl4)
+#g <- arrangeGrob(ppl1, ppl2,ppl3,ppl4, nrow=4)
+#ggsave(file="yield-fee-loanamount.pdf", g)
+
+```
+
+
+```{r}
+#summary(subset(newdata4, LoanStatus="Defaulted"))
+```
+
+
+```{r}
+#hist(newdata4$EstimatedReturn)
+#ggplot(newdata4, aes(EstimatedReturn)) +
+#  geom_histogram() + facet_wrap( ~ LoanStatus) +
+#  labs(title = "Histogram of Estimated Return by Loan Status",
+#       x = "Estimated Return (%)",
+#       y="Frequency")
+#ggplot(newdata4, aes(EstimatedReturn)) +
+#  geom_histogram() + facet_wrap( ~ ProsperScore) +
+#  labs(title = "Histogram of Estimated Return by Prosper Score",
+#       x = "Prosper Loan Score (Rating 1-11)",
+#       y="Frequency")
+
+```
+
+
+```{r}
+#print(levels(newdata$LoanStatus))
+newdata4$rfls <- factor(newdata4$LoanStatus,
+  levels(newdata4$LoanStatus)[c(5,2,7,12,11,10,9,8,3,6,4,1)])
+#print(levels(newdata4$rfls))
+#ggplot(newdata4, aes(factor(rfls), EstimatedReturn)) + geom_boxplot() +
+#  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+#  labs(title = "Estimated Return by Loan Status",
+#       x = "Estimated Return (%)",
+#       y="Loan Status")
+#ggsave(file="Return-LoanStatus.pdf")
+```
+
+
+```{r}
+myvars5 <- c("EstimatedEffectiveYield","BorrowerState",
+  "Occupation","EmploymentStatusDuration",
+  "BorrowerAPR","ProsperScore","CreditScoreRangeLower","BorrowerAPR",
+  "LoanOriginalAmount","AvailableBankcardCredit")
+newdata5 <- loandata[myvars5]
+#summary(newdata5)
+
+#percent loans where the borrower employed less than 1 year
+#nrow(subset(newdata5, EmploymentStatusDuration<=12))
+#ggplot(aes(x=ProsperScore,y=CreditScoreRangeLower), data=newdata5) +
+#  geom_jitter(alpha=1/40) + geom_smooth() +
+#  labs(title = "Prosper Score vs Credit Score",
+#       x = "Prosper Score (1-11 Rating)",
+#       y="Credit Score")
+#ggplot(aes(x=ProsperScore,y=BorrowerAPR), data=newdata5) +
+#  geom_jitter(alpha=1/40) + geom_smooth() +
+#    labs(title = "Prosper Score vs Borrower APR",
+#       x = "Prosper Score (1-11 Rating)",
+#       y="BorrowerAPR (%)")
+#ggplot(aes(x=LoanOriginalAmount,y=ProsperScore), data=newdata5) +
+#  geom_jitter(alpha=1/40) + geom_smooth() +
+#    labs(title = "Loan Amount vs Prosper Score",
+#       x = "Loan Amount ($)",
+#       y="Prosper Score (1-11 Rating)")
+#ggplot(aes(x=AvailableBankcardCredit,y=ProsperScore, color="orange"),
+#       data=newdata5) + geom_jitter(alpha=1/20) +
+#  xlim(0, quantile(newdata5$AvailableBankcardCredit, na.rm=TRUE, .95))+
+#  stat_smooth() + labs(title = "Available Bankcard Balance vs Prosper Score",
+#       x = "Available Bankcard Balance ($)",
+#       y="Prosper Score (1-11 Rating)")
+```
+
+
+```{r}
+#plot lender yield versus employment duration
+pg3<-ggplot(aes(x=EmploymentStatusDuration,y=EstimatedEffectiveYield,
+  color="orange"),data=newdata5) + geom_point(alpha=1/20)+
+  labs(title = "Employment Duration vs Loan Yield",
+       x = "Employment Duration (months)",
+       y="Estimated Yield (1-11 Rating)")
+#plot borrowerAPR versus employment duration
+
+pg2<-ggplot(newdata5, aes(factor(BorrowerState), BorrowerAPR)) + geom_boxplot() +
+  labs(title = "Borrower State of Residence vs Borrowing Rates",
+       x = "State",
+       y="BorrowerAPR")
+#plot borrower occupation versus APR
+pg1<-ggplot(newdata5, aes(factor(Occupation), BorrowerAPR)) +
+  geom_boxplot() +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+    labs(title = "Borrower Occupation vs Borrowing Rates",
+       x = "Occupation",
+       y="BorrowerAPR")
+
+#grid.arrange(pg1,pg2,pg3)
+```
+
+
+```{r}
+myvars5A <- c("BorrowerAPR","ProsperScore",
+              "CreditScoreRangeLower","LoanOriginalAmount",
+              "AvailableBankcardCredit")
+newdata5A <- loandata[myvars5A]
+#summary(newdata5A)
+#ggpairs(newdata5A)
+
+
+plo1<-ggplot(aes(x=ProsperScore,y=CreditScoreRangeLower), data=newdata5) +
+  geom_jitter(alpha=1/40) + geom_smooth() +
+  geom_hline(aes(yintercept=mean(newdata5$CreditScoreRangeLower,
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata5$ProsperScore,
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed") +
+  ylim(550, 900)
+plo2<-ggplot(aes(x=ProsperScore,y=BorrowerAPR), data=newdata5) +
+  geom_jitter(alpha=1/40) + geom_smooth() +
+  geom_hline(aes(yintercept=mean(newdata5$BorrowerAPR, 
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata5$ProsperScore,
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed")
+plo3<-ggplot(aes(x=LoanOriginalAmount,y=ProsperScore), data=newdata5) +
+  geom_jitter(alpha=1/40) + geom_smooth() +
+  geom_hline(aes(yintercept=mean(newdata5$ProsperScore,
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata5$LoanOriginalAmount,
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed")
+plo4<-ggplot(aes(x=AvailableBankcardCredit,y=ProsperScore),data=newdata5) +
+  geom_jitter(alpha=1/40) +
+  xlim(0, quantile(newdata5$AvailableBankcardCredit, na.rm=TRUE, .95))+
+  stat_smooth() +
+  geom_hline(aes(yintercept=mean(newdata5$ProsperScore, 
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata5$AvailableBankcardCredit, 
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed")
+#grid.arrange(plo2,plo1,plo4,plo3)
+
+
+```
+
+
+```{r}
+myvars6 <- c("CreditScoreRangeLower","CreditScoreRangeUpper",
+             "StatedMonthlyIncome","CurrentCreditLines","AmountDelinquent",
+             "DebtToIncomeRatio","IncomeRange")
+newdata6 <- loandata[myvars6]
+#summary(newdata6)
+
+#monthly income credit score
+ploot1<-ggplot(aes(y=CreditScoreRangeUpper,x=StatedMonthlyIncome,
+  color="orange"),data=newdata6) + geom_point(alpha=1/20) +
+  xlim(0, quantile(newdata6$StatedMonthlyIncome, .95)) + stat_smooth() +
+  geom_hline(aes(yintercept=mean(newdata6$CreditScoreRangeUpper, 
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata6$StatedMonthlyIncome, 
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed")
+#does having more credit lines help or hurt credit score
+ploot2<-ggplot(aes(y=CreditScoreRangeUpper,x=CurrentCreditLines,
+  color="orange"),data=newdata6) + geom_jitter(alpha=1/20) +
+  xlim(0, quantile(newdata6$CurrentCreditLines, .99, na.rm=TRUE)) + stat_smooth() +
+   geom_hline(aes(yintercept=mean(newdata6$CreditScoreRangeUpper, 
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata6$CurrentCreditLines, 
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed")
+#ggsave(file="Creditlines=creditscore.pdf")
+#amount delinquent versus credit score
+plot1<-ggplot(aes(x=CreditScoreRangeUpper,y=AmountDelinquent,
+  color="orange"),data=newdata6) + geom_jitter(alpha=1/20) +
+  ylim(0, quantile(newdata6$AmountDelinquent, .90,na.rm=TRUE)) +
+  stat_smooth() +
+   geom_hline(aes(yintercept=mean(newdata6$AmountDelinquent, 
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata6$CreditScoreRangeUpper, 
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed")
+  
+#ggsave(file="Amtdelinquent-creditscore.pdf")
+##debt-to-income ratio versus income
+plot2<-ggplot(aes(y=DebtToIncomeRatio,x=StatedMonthlyIncome,
+  color="orange"),data=newdata6) + geom_point(alpha=1/20) +
+  xlim(0, quantile(newdata6$StatedMonthlyIncome, .99,na.rm=TRUE)) +
+  ylim(0, quantile(newdata6$DebtToIncomeRatio, .99,na.rm=TRUE))
+##debt-to-income ratio versus credit score
+plot3<-ggplot(aes(y=DebtToIncomeRatio,x=CreditScoreRangeLower,
+  color="orange"),data=newdata6) + geom_jitter(alpha=1/20) +
+  xlim(0.1, quantile(newdata6$CreditScoreRangeLower, .99,na.rm=TRUE)) +
+  ylim(0, quantile(newdata6$DebtToIncomeRatio, .99,na.rm=TRUE))
+#grid.arrange(plot1,plot2,plot3,ploot1,ploot2)
+#g <- arrangeGrob(plot1, plot2, plot3, nrow=3)
+#ggsave(file="delinquent-creditscore-depttoincomecreditscore.pdf", g)
+
+```
+
+
+```{r}
+myvars8 <- c("LoanOriginalAmount","LoanStatus","BorrowerAPR",
+             "LoanOriginationQuarter","LP_CollectionFees","LP_ServiceFees")
+newdata8 <- loandata[myvars8]
+#summary(newdata8)
+#refector quarter variable
+#print(levels(newdata8$LoanOriginationQuarter))
+newdata8$lq<-factor(newdata8$LoanOriginationQuarter,
+  levels(newdata8$LoanOriginationQuarter)[c(25,
+  1,9,17,26,2,10,18,27,3,11,19,28,12,20,
+  29,4,13,21,30,5,14,22,31,6,15,23,32,7,16,24,33,8)])
+#print(levels(newdata8$lq))  
+#plot borrower APR versus loan quarter
+p1<-ggplot(newdata8, aes(factor(lq), BorrowerAPR)) + geom_boxplot() +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+   labs(title = "Borrower Rates Over Time",
+       x = "Year/Quarter (Date)",
+       y="Borrower APR (%)")
+#ggsave(file="borrowerapr-quarter.pdf")
+#plot LoanOriginalAmount versus loan quarter
+p2 <-ggplot(newdata8, aes(factor(lq), LoanOriginalAmount)) +
+  geom_boxplot() + theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+   labs(title = "Loan Amounts Over Time",
+       x = "Year/Quarter (Date)",
+       y="Loan Amount ($)")
+#ggsave(file="loan amount-quarter.pdf")
+
+
+#count(newdata8$lq)
+#number of loans per quarter
+pp1<-ggplot(newdata8, aes(factor(lq))) + geom_bar() +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+#total amount of loans per quarter
+mm <- ddply(newdata8, "lq", summarise, totalborrowed = sum(LoanOriginalAmount))
+pp2<-ggplot(mm, aes(x = factor(lq), y = totalborrowed)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+mm1 <- ddply(newdata8, "lq", summarise, totalborrowed = mean(LoanOriginalAmount))
+pp3<-ggplot(aes(x = factor(lq), y =LoanOriginalAmount), data=newdata8) +
+  geom_boxplot() + theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+#grid.arrange(p1, p2, pp1,pp2,pp3)
+#g <- arrangeGrob(pp1, pp2, pp3, nrow=3)
+#ggsave(file="totalloanstotalborrowed-quarter.pdf", g)
+
+
+pp1<-ggplot(newdata8, aes(factor(lq))) + geom_bar() +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+#total amount of loans per quarter
+mm <- ddply(newdata8, "lq", summarise, totalborrowed = sum(LoanOriginalAmount))
+pp2<-ggplot(mm, aes(x = factor(lq), y = totalborrowed)) +
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+mm1 <- ddply(newdata8, "lq", summarise, totalborrowed = mean(LoanOriginalAmount))
+pp3<-ggplot(aes(x = factor(lq), y =LoanOriginalAmount,na.rm = TRUE ),
+  data=newdata8) + geom_jitter(alpha=1/40, color = "red") +
+  geom_boxplot(outlier.size = 0) +
+  stat_summary(fun.y=median, geom="line", aes(group = 1))  + 
+  stat_summary(fun.y=median, geom="point") + 
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+
+```
+
+
+```{r}
+myvars9 <- c("LoanOriginalAmount","LoanStatus","BorrowerAPR",
+             "LoanOriginationQuarter","CreditScoreRangeLower",
+             "CreditGrade","ProsperScore")
+newdata9 <- loandata[myvars9]
+#summary(newdata9)
+#refector quarter variable
+#print(levels(newdata9$LoanOriginationQuarter))
+newdata9$lq<-factor(newdata9$LoanOriginationQuarter,
+                    levels(newdata9$LoanOriginationQuarter)[c(25,1,9, 
+  17,26,2,10,18,27,3,11,19,28,12,20,29,4,
+  13,21,30,5,14,22,31,6,15,23,32,7,16,24,33,8)])
+#print(levels(newdata9$lq))  
+#plot credit score (lower bound) versus loan quarter
+
+#investigate quality of loans ProsperLoan has given out over time - based on ProsperScore and CreditGrade
+p92<-ggplot(newdata9, aes(factor(lq))) + geom_bar() + 
+  facet_wrap(~CreditGrade) + 
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) 
+#g <- arrangeGrob(p91, p92, p93, nrow=3)
+#ggsave(file="loanquality-quarter.pdf")
+p91<-ggplot(newdata9, aes(factor(lq), ProsperScore)) + 
+  geom_jitter(alpha=1/40, color = "red") +
+  geom_boxplot(outlier.size = 0) +
+  stat_summary(fun.y=median, geom="line", aes(group = 1))  + 
+  stat_summary(fun.y=median, geom="point") +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, size=6)) +
+  labs(title = "Prosper Score Over Time",
+       x = "Year/Quarter (Date)",
+       y="Prosper Loan Score (11 high, 1 low")
+f <- factor(newdata9$ProsperScore)
+levels(f) <- c("1-3","1-3","1-3","4-7","4-7","4-7","4-7","8-11","8-11","8-11","8-11")
+p93<-ggplot(newdata9, aes(factor(lq), colour=factor(f))) + geom_bar() +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+  labs(title = "Number of Loans Over Time",
+       x = "Year/Quarter (Date)",
+       y="Number of Loans",
+       color = "Prosper Score")
+#grid.arrange(p91,p92,p93)
+```
+
+
+```{r}
+myvars10 <- c("LoanOriginalAmount","LoanStatus",
+              "TotalProsperLoans","MemberKey", "CreditScoreRangeLower")
+newdata10 <- loandata[myvars10]
+#summary(newdata10)
+#check facotring of total loans variable
+#print(levels(factor(newdata10$TotalProsperLoans)))
+#plot number of loans versus credit score of borrower
+pl1<-ggplot(newdata10, aes(factor(TotalProsperLoans), CreditScoreRangeLower )) +
+  geom_boxplot()
+#total amount loaned to borrowers by number of current loans
+mm2 <- ddply(newdata10, "TotalProsperLoans",
+  summarise, totalborrowed = sum(LoanOriginalAmount))
+pl2<-ggplot(mm2, aes(x = factor(TotalProsperLoans),
+  y = totalborrowed)) + geom_bar(stat = "identity")
+#grid.arrange(pl1,pl2)
+#g <- arrangeGrob(pl1, pl2, nrow=2)
+#ggsave(file="borrowersbynumberofloans.pdf", g)
+
+```
+
+
+```{r}
+myvars11 <- c("CreditScoreRangeLower","LoanOriginalAmount",
+              "LoanMonthsSinceOrigination","PercentFunded","Recommendations",
+              "InvestmentFromFriendsAmount","Investors",
+              "LoanOriginationQuarter")
+newdata11 <- loandata[myvars11]
+#summary(newdata11)
+#is social getting more popular
+#print(levels(newdata11$LoanOriginationQuarter))
+newdata11$lq<-factor(newdata11$LoanOriginationQuarter,
+                     levels(newdata11$LoanOriginationQuarter)[c(25,1,9,17,
+  26,2,10,18,27,3,11,19,28,12,20,29,4,13,21,30,5,14,22,31,
+  6,15,23,32,7,16,24,33,8)])
+#print(levels(newdata11$lq))  
+#plot borrower APR versus loan quarter
+plo1<-ggplot(newdata11, aes(factor(lq), InvestmentFromFriendsAmount)) +
+  geom_boxplot() + 
+  ylim(0, quantile(newdata11$InvestmentFromFriendsAmount, .99)) +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+plo2<-ggplot(newdata11, aes(factor(lq), Recommendations)) + geom_boxplot() +
+  ylim(0, quantile(newdata11$Recommendations, .99)) +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6))
+#grid.arrange(plo1,plo2)
+```
+
+
+```{r}
+myvars12 <- c("CreditScoreRangeLower","LoanOriginalAmount",
+              "LoanOriginationQuarter","LP_ServiceFees",
+              "LP_CollectionFees", "ProsperScore")
+newdata12 <- loandata[myvars12]
+#summary(newdata12)
+#ggplot(aes(x=-1*(LP_ServiceFees),-1*(LP_CollectionFees)),data=newdata12) +
+#  geom_jitter(alpha=1/40) + stat_smooth()
+#ggplot(aes(y=-1*(LP_CollectionFees),x=ProsperScore),data=newdata12) +
+#  geom_jitter(alpha=1/40)+ stat_smooth()
+#ggplot(aes(y=-1*(LP_ServiceFees),x=ProsperScore),data=newdata12) +
+#  geom_jitter(alpha=1/40) + stat_smooth()
+
+```
+
+
+
+###***### 
+#Final Plots and Summary
+
+Prosper Loans facilitates crowdsource funding of medium size loans. Most often these loans are used for home improvements, starting or expanding a business, attaining a degree or purchasing a car. Prosper Loans is different from a traditional bank which loans out money from it's deposits and charges interest. Instead, Prosper makes loan rquests public so individuals may provide loans to borrowers and the lenders then collect the interest instead of a bank. Prosper takes flat fee on every loan that is considerably smaller than what a traditional bank will charge.
+
+In my 3 plots I will examine this dataset from each of the three stakeholders in the Prosper Loans model: 1) Borrowers seeking a loan, 2) Investors looking to profit from backing a loan, and 3) the Prosper Loans company overseeing the operation. In my plots I will investigate howeach party can maximize the Prosper Loan process. How can borrowers get the best borrowing rates? Which loans should investors back to get the highest yield in return? For which type of loans is Prosper Loans having the most success and growing business?
+
+Final Plot 1 - Prosper Loans investors best strategy for high yields
+Prosper gives each loan application a quality rating between 1 and 11 (Prosper Score) based on the credit score and finances of the prospective borrower. In plot 1 I show the estimated yield for loans of each score of all amounts. The plot shows that the lender can recieve a higher yield in return for his or her investment by backing a loan with a lower score. The best loan for investors to back in order to recieve maximum return has Original Amount between $2000-6000 and ProsperScore between 2 and 6. Loans with higher qulity scores return less yield because the borrower has excellent credit and will be offered a low borrowing rate. Loans with lower quality score sometimes have negative yield becuase of frequent defaults by borrowers with bad credit history. The mean yield for all loans is 16.9%, but lenders who back $2000 - $6000 loans with quality score in range 2-6 will recieve estimated yields upwards of 25%.
+
+```{r}
+ggplot(newdata4, aes(x=LoanOriginalAmount,
+  y=EstimatedEffectiveYield,colour=factor(ProsperScore))) +
+  geom_jitter(alpha=1/40) + 
+  stat_smooth() +
+  geom_hline(aes(yintercept=mean(newdata4$EstimatedEffectiveYield,
+  na.rm = TRUE)),colour="#990000", linetype="dashed") +
+  geom_vline(aes(xintercept=mean(newdata4$LoanOriginalAmount, 
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed") +
+    labs(title = "Best Prosper Loans for Investors",
+       x = "Loan Original Amount($)",
+       y="Estimated Yield (%)",
+       color = "Loan Quality (11-high, 1-low")
+
+#print mean yield for each prosper score
+newdata4 %>%
+ group_by(ProsperScore) %>%
+ summarise(avg = mean(EstimatedEffectiveYield)) %>%
+ arrange(avg)
+
+```
+
+
+Final Plot 2 - Prosper Loan business and lending trends over time
+Like many financial institutions durring the 2008-2009 US housing market and financial crisis, Prosper significantly scaled back business. In the first quarter of the 2009, when the economy reached a low point, Prosper facilitated 0 loans for the entire period. Prosper initally started facilitating loans in 2005 and saw business grow steadily before falling off quickly in 2008. Since the second quarter of 2009, Prosper has steadily grown and surpassed pre- crisis business marks. Plot 3 shows all loans faciliated by Prosper. In 2009 Prosper began assigning the quality grade Prosper Score (1-11) to all loan applications so this data is visible by plot coloring after 2009 but not before. Prosper is increasing business volume in recent years (shown by the density of points) and increasing the median amount of loans (shown by the black line connecting the median loan value for each year/quarter ). From the colored plots, we see that Prosper's largest increases in loan volume come from loans with medium prosper score in range 4-7. This plot also shows us that propser raised the minimum loan limit from $1000 to $2000 at the end of 2010, and raised the maximum limit from $2500 to $3500 starting the second quarter of 2013.
+
+
+```{r}
+
+#summary(newdata9)
+f <- factor(newdata9$ProsperScore)
+levels(f) <- c("1-3","1-3","1-3","4-7","4-7","4-7","4-7","8-11","8-11","8-11","8-11")
+##total amount 
+ggplot(newdata9, aes(x = lq, y= LoanOriginalAmount, color = factor(f))) +
+  geom_jitter(alpha=1/25) +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=6)) +
+  stat_summary(fun.y=median, geom="line", aes(group = 1))  + 
+  stat_summary(fun.y=median, geom="point") +
+  labs(title = "Prosper Business Trends Over Time",
+       x = "Year/Quarter",
+       y="Loan Original Amount",
+       color = "Loan Quality (11-high, 1-low")
+#pp1 data
+table(newdata8$lq)
+```
+
+Final Plot 3 - ProsperLoan best strategy for borrowers
+While lenders may select what type of loan or loans to invest in with Prosper in order to get a higher or lower return, borrowers do not have this flexibility. The rates for borrowers are determined by their credit score and personal finances. Suprisingly, there are not many factors that a prospective borrower may adjust on his or her application (such as loan amount or payback period) to get favorable rates. A borrower looking for the best rates on a loan ought to compare Prosper with other lending institutions. In this plot I show the strong relationship between credit score and borrower APR. The correlation coefficient for these features is (-0.6682872).  I also use coloring to show median values for large and small loans to show that larger loans tend to be charges lower borrowerAPR. Like with many lending insitutions, borrowers with the best credit history will be offered the best borrowing rates.
+
+```{r}
+summary(newdata5)
+f <- factor(newdata5$ProsperScore)
+levels(f) <- c("1-3","1-3","1-3","4-7","4-7","4-7", "4-7","8-11","8-11","8-11","8-11")
+summary(f)
+#levels(factor(newdata5$AvailableBankcardCredit))
+x <- newdata5$LoanOriginalAmount
+y <- cut(x, b = 4)
+#table(y)
+
+ggplot(aes(x=CreditScoreRangeLower,y=BorrowerAPR, color=factor(y)),
+       data=newdata5) +
+  geom_jitter(alpha=1/25)  + xlim(500, 850) +
+  stat_summary(fun.y=median, geom="line", aes(group = 1))  + 
+  stat_summary(fun.y=median, geom="point", size =2) +
+  geom_vline(aes(xintercept=mean(newdata5$CreditScoreRangeLower,
+  na.rm = TRUE)),colour="#32CD32", linetype="dashed") +
+  labs(title = "Minimizing Borrower APR",
+       x = "Credit Score",
+       y="Borrower APR (%)",
+       color = "Loan Amount")
+
+
+```
+
+Correlation ProsperScore to APR
+```{r}
+cor(newdata5$BorrowerAPR, newdata5$ProsperScore, use="complete")
+```
+Correlation Credit Score to ProsperScore
+```{r}
+cor(newdata5$CreditScoreRangeLower, newdata5$ProsperScore, use="complete")
+```
+Correlation Prosper Score to BankCard Credit
+```{r}
+cor(newdata5$ProsperScore, newdata5$AvailableBankcardCredit, use="complete")
+```
+Correlation Prosper Score to Loan Amount
+```{r}
+cor(newdata5$ProsperScore, newdata5$LoanOriginalAmount, use="complete")
+```
+
+###***### 
+##Reflection
+
+While investigating Prosper Loans and answering my general questions with calculations and plots, I found several areas that would be interesting for future investigation.
+
+While looking at Prosper from the perspective of an investor/lender, I noticed that the data is often makes assumptions about events that will happen regarding the loans in the future, but these events are uncertain. For example, for completed loans or loans made in the less recent past, we have data available about whether the loan is paid off successfuly or if it is past due or in default. For defaulted loans we can calculate how much the investor lost. It appears that investors with Prosper can lose money. I assume there is some degree of protection against default or fraud but determining the precise policies was beyond the scope of my project.
+While we can see the repurcusions of defaults for investors in past loans, for currently active loans we are not given an assment of the risk the loan will default. I assume risk can be calculated based on the prosper score or credit score.This information can be used to better determine the best loans for investors to back. This would be an excellent topic to investigate in a future project. 
+
+For my investigation into how prospective borrowers may get the best deal on a loan from Prosper, the dat indicated that credit score was the primary determining factor behind the rate offered to the borrower (the correlation coefficient was -0.6682872). However there are likely other factors at play as well in determining what rates are offered to borrowers. I used a ggpairs chart with features in Prosper data to try to determine other relationships and I see that loan amount and available credit are also factors, while borrower state of residence and occupation were not. There is guesswork and intuition involved in this approach, so I would interested in using a more precis approach that can narrow down and rank the features. I think using machine learning principal component analysis would be an excellent for this question.
+There is a separate but related question I would like to answer regarding how Prosper evaluates loan applicants. While most institutions us credit score, Prosper assigns each loan a rating called Prosper Score. These metrics are very similar in that they both evaluate the applicants credit history and personal finances, but I would be interested in investigating to see how they are different. What factors does Prosper consider in evaluating applicants that credit agencies do not? Do people with certain credit history benefit more from using Prosper versus a tranditional bank?
+
+Finally, for the plot showing the trends of the Prosper business over time, where I identified that prosper is seeing growth in medium-score loans, I would be interested in discussing my assessment with a person fron the company to see if it is accurate. Did prosper set out thinking this niche would be their ideal market, or did this success develop over time. I would not be surprised to learn that Prosper initially targeted smaller loans with it's service, because median loan amount has steadily risen since 2009 and Prosper raised minimum loan threshold and maximum loan threshold in 2011 and 2013 respectivey. In studying the overall dynamics of Prosper I would be interested to learn more about the demographics  of the borrowers, but I agree that this non-financial and credit related information should be shielded to prevent bias in lending to borrowers.
+
+```
+
